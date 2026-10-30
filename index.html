@@ -25,6 +25,7 @@
   --accent:#3BB8B0; --accent-ink:#062224; --maybe:#F0B94A; --hol:#F07484; color-scheme:dark}
 
 *{box-sizing:border-box}
+[hidden]{display:none!important}
 body{background:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:15px;line-height:1.6;
   padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 48px}
 .wrap{max-width:980px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
@@ -310,7 +311,12 @@ let mode="loading",fb=null,gid=null,unsub=null;
 let S={people:[],current:null};
 const pending=new Map();
 function randomId(n){const a="abcdefghijkmnpqrstuvwxyz23456789";const r=crypto.getRandomValues(new Uint8Array(n));return Array.from(r,x=>a[x%a.length]).join("")}
-const hashId=()=>{const h=location.hash.slice(1);return /^[a-z0-9]{8,32}$/.test(h)?h:null};
+const validId=h=>/^[a-z0-9]{8,32}$/.test(h||"");
+// ลิงก์แก๊งใช้ ?g=รหัส (แอพแชตไม่ตัดทิ้ง) ยังรองรับลิงก์เก่าแบบ #รหัส
+const hashId=()=>{let g=null;try{g=new URLSearchParams(location.search).get("g")}catch(e){}
+  if(validId(g))return g;const h=location.hash.slice(1);return validId(h)?h:null};
+const groupUrl=id=>location.origin+location.pathname+"?g="+id;
+function goGroup(id){location.href=groupUrl(id)}
 
 async function loadFirebase(){
   const t=new Promise((_,rej)=>setTimeout(()=>rej(new Error("timeout")),10000));
@@ -323,7 +329,7 @@ function openGroup(id){
   if(unsub)unsub();
   gid=id;S={people:[],current:ls.get("me:"+id)};pending.clear();
   $("intro").hidden=true;$("app").hidden=false;$("shareCard").hidden=false;ls.set("lastGroup",id);
-  $("shareLink").value=location.href;
+  $("shareLink").value=groupUrl(id);
   setStat("");renderAll();
   unsub=fb.onSnapshot(fb.collection(fb.db,"groups",id,"people"),snap=>{
     const list=[];
@@ -337,8 +343,8 @@ function openGroup(id){
 }
 function showIntro(){if(unsub)unsub();unsub=null;gid=null;$("intro").hidden=false;$("app").hidden=true;
   const last=ls.get("lastGroup");$("openLast").hidden=!(last&&/^[a-z0-9]{8,32}$/.test(last));
-  $("openLast").onclick=()=>{location.hash=last};renderHeader()}
-$("newGroup").onclick=()=>{location.hash=randomId(12)};
+  $("openLast").onclick=()=>goGroup(last);renderHeader()}
+$("newGroup").onclick=()=>goGroup(randomId(12));
 window.addEventListener("hashchange",()=>{if(mode!=="fb")return;const id=hashId();id?openGroup(id):showIntro()});
 
 function persist(p){
@@ -472,7 +478,7 @@ function renderResult(){
 }
 $("copyLine").onclick=()=>{
   const lines=["🗓 วันที่ว่างตรงกัน",...wins.slice(0,3).map((w,i)=>`${i+1}. ${fmtW(w)} (${w.len} วัน) ว่าง ${w.go}/${S.people.length}${w.missing.length?" ไม่ว่าง: "+w.missing.join(", "):""}`)];
-  if(gid)lines.push("กรอกวันว่างเพิ่มได้ที่ "+location.href);
+  if(gid)lines.push("กรอกวันว่างเพิ่มได้ที่ "+groupUrl(gid));
   copy(lines.join("\n"),"คัดลอกสรุปแล้ว");
 };
 $("copyLink").onclick=()=>copy($("shareLink").value,"คัดลอกลิงก์แล้ว",$("shareLink"));
