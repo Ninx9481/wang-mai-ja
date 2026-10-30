@@ -163,7 +163,10 @@ button{cursor:pointer}
       <li>ส่งลิงก์ในกลุ่มไลน์</li>
       <li>ทุกคนกรอกวันว่างของตัวเอง แล้วดูผลรวมได้ทันที</li>
     </ol>
-    <button class="btn primary" id="newGroup" type="button" style="padding:10px 18px">สร้างลิงก์ของแก๊ง</button>
+    <div class="row">
+      <button class="btn primary" id="newGroup" type="button" style="padding:10px 18px">สร้างลิงก์ของแก๊ง</button>
+      <button class="btn" id="openLast" type="button" style="padding:10px 18px" hidden>กลับไปแก๊งเดิม</button>
+    </div>
   </section>
 
   <div id="app" class="panel" hidden>
@@ -226,7 +229,6 @@ button{cursor:pointer}
         <div class="who" id="who"></div>
       </div>
     </div>
-    <p class="note" id="newGroupNote" hidden>อยากหาวันกับอีกแก๊ง? <button class="btn ghost" id="newGroup2" type="button">สร้างลิงก์ใหม่</button></p>
   </div>
 </div>
 <div class="toast" id="toast" role="status" hidden></div>
@@ -320,7 +322,7 @@ async function loadFirebase(){
 function openGroup(id){
   if(unsub)unsub();
   gid=id;S={people:[],current:ls.get("me:"+id)};pending.clear();
-  $("intro").hidden=true;$("app").hidden=false;$("shareCard").hidden=false;$("newGroupNote").hidden=false;
+  $("intro").hidden=true;$("app").hidden=false;$("shareCard").hidden=false;ls.set("lastGroup",id);
   $("shareLink").value=location.href;
   setStat("");renderAll();
   unsub=fb.onSnapshot(fb.collection(fb.db,"groups",id,"people"),snap=>{
@@ -333,9 +335,10 @@ function openGroup(id){
     S.people=list;renderAll();
   },err=>{setStat(err.code==="permission-denied"?"ฐานข้อมูลไม่อนุญาต ตรวจกฎ (Rules) ใน Firebase":"เชื่อมต่อฐานข้อมูลไม่ได้",true)});
 }
-function showIntro(){if(unsub)unsub();unsub=null;gid=null;$("intro").hidden=false;$("app").hidden=true;renderHeader()}
-function newGroup(){location.hash=randomId(12)}
-$("newGroup").onclick=newGroup;$("newGroup2").onclick=newGroup;
+function showIntro(){if(unsub)unsub();unsub=null;gid=null;$("intro").hidden=false;$("app").hidden=true;
+  const last=ls.get("lastGroup");$("openLast").hidden=!(last&&/^[a-z0-9]{8,32}$/.test(last));
+  $("openLast").onclick=()=>{location.hash=last};renderHeader()}
+$("newGroup").onclick=()=>{location.hash=randomId(12)};
 window.addEventListener("hashchange",()=>{if(mode!=="fb")return;const id=hashId();id?openGroup(id):showIntro()});
 
 function persist(p){
