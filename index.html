@@ -131,10 +131,16 @@ button{cursor:pointer}
 .mnav button:disabled{opacity:.35;cursor:default}
 .sec{font-family:var(--font-display);font-size:13px;letter-spacing:.06em;color:var(--muted);display:flex;align-items:center;gap:10px}
 .sec::after{content:"";flex:1;height:1px;background:var(--line)}
+.stat{font-size:13px;color:var(--muted)}
+.stat.err{color:var(--hol)}
+.banner{border:1px dashed var(--line);border-radius:var(--r);padding:12px 14px;font-size:14px;color:var(--muted)}
+.intro{display:flex;flex-direction:column;gap:14px;align-items:flex-start}
+.intro ol{margin:0;padding-left:20px;color:var(--muted)}
 @media (prefers-reduced-motion:no-preference){.day,.win,.chip{transition:background .12s,border-color .12s,box-shadow .12s}}
 </style>
 </head>
 <body>
+
 
 
 <div class="wrap">
@@ -147,59 +153,96 @@ button{cursor:pointer}
     <div class="stub"><b id="tCount" class="num">0</b><span>คนกรอกแล้ว</span></div>
   </header>
 
-  <div class="sec">กรอกวันว่าง</div>
-  <div class="card" style="display:flex;flex-direction:column;gap:12px">
-    <h2 style="font-size:20px">คุณคือใคร</h2>
-    <div class="row" id="people"></div>
-  </div>
-  <div class="card" style="display:flex;flex-direction:column;gap:14px">
-    <div class="row" style="justify-content:space-between">
-      <h2 style="font-size:20px" id="fillTitle">วันว่างของ</h2>
-      <div class="brush" role="group" aria-label="เลือกสถานะที่จะใส่">
-        <button data-b="2" aria-pressed="true"><span class="dot free"></span>ว่าง</button>
-        <button data-b="1" aria-pressed="false"><span class="dot maybe"></span>พอไหว</button>
-        <button data-b="0" aria-pressed="false"><span class="dot busy"></span>ไม่ว่าง</button>
-      </div>
-    </div>
-    <p class="hint">เลือกสถานะด้านบน แล้วแตะวันที่ในปฏิทิน บนคอมลากเมาส์ระบายหลายวันได้ วันที่ไม่ได้แตะถือว่าไม่ว่าง</p>
-    <div class="row">
-      <button class="btn" id="qWeekend" type="button">ว่างทุกเสาร์-อาทิตย์และวันหยุด (2 เดือนนี้)</button>
-      <button class="btn ghost" id="qClear" type="button">ล้างของฉัน</button>
-    </div>
-    <div class="mnav"><button type="button" id="fPrev" aria-label="เดือนก่อน">‹</button><b id="fLabel"></b><button type="button" id="fNext" aria-label="เดือนถัดไป">›</button></div>
-    <div class="months" id="fillCal"></div>
-    <div class="legend">
-      <span><span class="dot free"></span>ว่าง</span><span><span class="dot maybe"></span>พอไหว</span>
-      <span><span class="holdot"></span>วันหยุดราชการ</span>
-    </div>
-  </div>
+  <p class="banner" id="loading">กำลังเชื่อมต่อ…</p>
 
-  <div class="sec">ผลรวมของทุกคน</div>
-  <div class="results">
+  <!-- no group yet -->
+  <section class="card intro" id="intro" hidden>
+    <h2 style="font-size:22px">เริ่มหาวันว่างกับแก๊ง</h2>
+    <ol>
+      <li>กดสร้างลิงก์ของแก๊ง</li>
+      <li>ส่งลิงก์ในกลุ่มไลน์</li>
+      <li>ทุกคนกรอกวันว่างของตัวเอง แล้วดูผลรวมได้ทันที</li>
+    </ol>
+    <button class="btn primary" id="newGroup" type="button" style="padding:10px 18px">สร้างลิงก์ของแก๊ง</button>
+  </section>
+
+  <div id="app" class="panel" hidden>
+    <p class="banner" id="demoNote" hidden>โหมดตัวอย่าง: เชื่อมฐานข้อมูลไม่ได้ เลยใช้ข้อมูลเพื่อนสมมติและเก็บไว้ในเครื่องนี้เท่านั้น เปิดผ่านลิงก์ GitHub Pages เพื่อใช้กับเพื่อนจริง</p>
+
+    <div class="card" id="shareCard" style="display:flex;flex-direction:column;gap:10px" hidden>
+      <h2 style="font-size:18px">ลิงก์ของแก๊งนี้</h2>
+      <p class="hint">ส่งลิงก์นี้ในกลุ่มไลน์ ใครมีลิงก์ก็เข้ามากรอกและดูผลได้ ไม่ต้องสมัครสมาชิก</p>
+      <div class="share"><input id="shareLink" readonly aria-label="ลิงก์ของแก๊ง"><button class="btn primary" id="copyLink" type="button">คัดลอกลิงก์</button></div>
+    </div>
+
+    <div class="sec">กรอกวันว่าง</div>
     <div class="card" style="display:flex;flex-direction:column;gap:12px">
-      <div class="row" style="justify-content:space-between">
-        <h2 style="font-size:20px">วันที่ว่างตรงกัน</h2>
-        <button class="btn" id="copyLine" type="button">คัดลอกไปแปะไลน์</button>
-      </div>
-      <ol class="wins" id="wins"></ol>
+      <h2 style="font-size:20px">คุณคือใคร</h2>
+      <div class="row" id="people"></div>
     </div>
     <div class="card" style="display:flex;flex-direction:column;gap:14px">
-      <h2 style="font-size:20px">ปฏิทินรวม</h2>
-      <p class="hint">ยิ่งสีเข้ม ยิ่งมีคนว่างเยอะ แตะวันเพื่อดูว่าใครว่างบ้าง</p>
-      <div class="mnav"><button type="button" id="hPrev" aria-label="เดือนก่อน">‹</button><b id="hLabel"></b><button type="button" id="hNext" aria-label="เดือนถัดไป">›</button></div>
-      <div class="months" id="heatCal"></div>
+      <div class="row" style="justify-content:space-between">
+        <div style="display:flex;flex-direction:column">
+          <h2 style="font-size:20px" id="fillTitle">วันว่างของ</h2>
+          <span class="stat" id="saveStat" role="status"></span>
+        </div>
+        <div class="brush" role="group" aria-label="เลือกสถานะที่จะใส่">
+          <button data-b="2" aria-pressed="true"><span class="dot free"></span>ว่าง</button>
+          <button data-b="1" aria-pressed="false"><span class="dot maybe"></span>พอไหว</button>
+          <button data-b="0" aria-pressed="false"><span class="dot busy"></span>ไม่ว่าง</button>
+        </div>
+      </div>
+      <p class="hint">เลือกสถานะด้านบน แล้วแตะวันที่ในปฏิทิน บนคอมลากเมาส์ระบายหลายวันได้ วันที่ไม่ได้แตะถือว่าไม่ว่าง</p>
+      <div class="row">
+        <button class="btn" id="qWeekend" type="button">ว่างทุกเสาร์-อาทิตย์และวันหยุด (2 เดือนนี้)</button>
+        <button class="btn ghost" id="qClear" type="button">ล้างของฉัน</button>
+      </div>
+      <div class="mnav"><button type="button" id="fPrev" aria-label="เดือนก่อน">‹</button><b id="fLabel"></b><button type="button" id="fNext" aria-label="เดือนถัดไป">›</button></div>
+      <div class="months" id="fillCal"></div>
       <div class="legend">
-        <span>ว่าง 0 คน <span class="heat"></span> ว่างทุกคน</span>
+        <span><span class="dot free"></span>ว่าง</span><span><span class="dot maybe"></span>พอไหว</span>
         <span><span class="holdot"></span>วันหยุดราชการ</span>
       </div>
-      <div class="who" id="who"></div>
     </div>
+
+    <div class="sec">ผลรวมของทุกคน</div>
+    <div class="results">
+      <div class="card" style="display:flex;flex-direction:column;gap:12px">
+        <div class="row" style="justify-content:space-between">
+          <h2 style="font-size:20px">วันที่ว่างตรงกัน</h2>
+          <button class="btn" id="copyLine" type="button">คัดลอกไปแปะไลน์</button>
+        </div>
+        <ol class="wins" id="wins"></ol>
+      </div>
+      <div class="card" style="display:flex;flex-direction:column;gap:14px">
+        <h2 style="font-size:20px">ปฏิทินรวม</h2>
+        <p class="hint">ยิ่งสีเข้ม ยิ่งมีคนว่างเยอะ แตะวันเพื่อดูว่าใครว่างบ้าง</p>
+        <div class="mnav"><button type="button" id="hPrev" aria-label="เดือนก่อน">‹</button><b id="hLabel"></b><button type="button" id="hNext" aria-label="เดือนถัดไป">›</button></div>
+        <div class="months" id="heatCal"></div>
+        <div class="legend">
+          <span>ว่าง 0 คน <span class="heat"></span> ว่างทุกคน</span>
+          <span><span class="holdot"></span>วันหยุดราชการ</span>
+        </div>
+        <div class="who" id="who"></div>
+      </div>
+    </div>
+    <p class="note" id="newGroupNote" hidden>อยากหาวันกับอีกแก๊ง? <button class="btn ghost" id="newGroup2" type="button">สร้างลิงก์ใหม่</button></p>
   </div>
-  <p class="note">ต้นแบบนี้เก็บข้อมูลไว้ในเบราว์เซอร์เครื่องนี้เท่านั้น ถ้าจะให้เพื่อนกรอกผ่านลิงก์เดียวกันแล้วเห็นผลรวมกัน ต้องต่อฐานข้อมูล เช่น Firebase หรือ Supabase</p>
 </div>
 <div class="toast" id="toast" role="status" hidden></div>
 
 <script>
+// ===== Firebase =====
+const FIREBASE_CONFIG={
+  apiKey:"AIzaSyDdMyx4jfLFtEFmrKU7kVy3-oItHfaUj_Q",
+  authDomain:"wang-mai-ja.firebaseapp.com",
+  projectId:"wang-mai-ja",
+  storageBucket:"wang-mai-ja.firebasestorage.app",
+  messagingSenderId:"832666154758",
+  appId:"1:832666154758:web:acdd99693336079cfd1087"
+};
+const FB_SDK="https://www.gstatic.com/firebasejs/10.12.2/";
+
 const MONTHS=["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
 const MONTHS_FULL=["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
 const DOW=["อา","จ","อ","พ","พฤ","ศ","ส"];
@@ -245,22 +288,70 @@ function findWindows(people,today){
   return res.slice(0,6);
 }
 
-// ---------- sample state ----------
+// ---------- demo data (ใช้เมื่อเชื่อม Firebase ไม่ได้) ----------
 function sample(){
   const base=()=>{const d={};for(const k of daysBetween("2026-11-01","2026-12-31"))if(isOff(k))d[k]=2;return d};
   const mk=(name,free=[],maybe=[],busy=[])=>{const d=base();free.forEach(k=>d[k]=2);maybe.forEach(k=>d[k]=1);busy.forEach(k=>delete d[k]);return{id:name,name,days:d}};
-  return{people:[
+  return[
     mk("ต้น",[],["2026-12-07"],["2026-11-14","2026-11-15","2026-11-28","2026-11-29"]),
     mk("มิว",["2026-11-13","2026-11-27"],[],["2026-12-12","2026-12-13"]),
     mk("แบม",["2026-12-04","2026-12-11"],[],["2026-11-21","2026-11-22"]),
     mk("กอล์ฟ",["2026-12-04","2026-12-11"],["2026-11-27"],["2026-12-19","2026-12-20"]),
     mk("ปราง",["2026-12-04","2026-12-11","2026-11-27"],[],["2026-11-07","2026-11-08"]),
-  ],current:"มิว"};
+  ];
 }
-let S;
-try{S=JSON.parse(localStorage.getItem("wangtrongkan3"))}catch(e){}
-if(!S||!Array.isArray(S.people))S=sample();
-const save=()=>{try{localStorage.setItem("wangtrongkan3",JSON.stringify(S))}catch(e){}};
+
+// ---------- state ----------
+const $=id=>document.getElementById(id);
+const ls={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
+let mode="loading",fb=null,gid=null,unsub=null;
+let S={people:[],current:null};
+const pending=new Map();
+function randomId(n){const a="abcdefghijkmnpqrstuvwxyz23456789";const r=crypto.getRandomValues(new Uint8Array(n));return Array.from(r,x=>a[x%a.length]).join("")}
+const hashId=()=>{const h=location.hash.slice(1);return /^[a-z0-9]{8,32}$/.test(h)?h:null};
+
+async function loadFirebase(){
+  const t=new Promise((_,rej)=>setTimeout(()=>rej(new Error("timeout")),10000));
+  const [appMod,fs]=await Promise.race([Promise.all([import(FB_SDK+"firebase-app.js"),import(FB_SDK+"firebase-firestore.js")]),t]);
+  const app=appMod.initializeApp(FIREBASE_CONFIG);
+  fb={db:fs.getFirestore(app),...fs};
+}
+
+function openGroup(id){
+  if(unsub)unsub();
+  gid=id;S={people:[],current:ls.get("me:"+id)};pending.clear();
+  $("intro").hidden=true;$("app").hidden=false;$("shareCard").hidden=false;$("newGroupNote").hidden=false;
+  $("shareLink").value=location.href;
+  setStat("");renderAll();
+  unsub=fb.onSnapshot(fb.collection(fb.db,"groups",id,"people"),snap=>{
+    const list=[];
+    snap.forEach(d=>{const v=d.data({serverTimestamps:"estimate"});
+      const local=pending.has(d.id)&&S.people.find(p=>p.id===d.id);
+      list.push(local||{id:d.id,name:v.name,days:v.days||{},createdAt:d.data().createdAt||null,t:v.createdAt?.toMillis?.()||Date.now()})});
+    for(const p of S.people)if(pending.has(p.id)&&!list.some(x=>x.id===p.id))list.push(p);
+    list.sort((a,b)=>(a.t||0)-(b.t||0));
+    S.people=list;renderAll();
+  },err=>{setStat(err.code==="permission-denied"?"ฐานข้อมูลไม่อนุญาต ตรวจกฎ (Rules) ใน Firebase":"เชื่อมต่อฐานข้อมูลไม่ได้",true)});
+}
+function showIntro(){if(unsub)unsub();unsub=null;gid=null;$("intro").hidden=false;$("app").hidden=true;renderHeader()}
+function newGroup(){location.hash=randomId(12)}
+$("newGroup").onclick=newGroup;$("newGroup2").onclick=newGroup;
+window.addEventListener("hashchange",()=>{if(mode!=="fb")return;const id=hashId();id?openGroup(id):showIntro()});
+
+function persist(p){
+  if(!p)return;
+  if(mode!=="fb"){ls.set("wangtrongkan-demo",JSON.stringify(S));return}
+  clearTimeout(pending.get(p.id));setStat("กำลังบันทึก…");
+  pending.set(p.id,setTimeout(async()=>{
+    const g=gid;
+    try{
+      await fb.setDoc(fb.doc(fb.db,"groups",g,"people",p.id),{name:p.name,days:p.days,createdAt:p.createdAt||fb.serverTimestamp(),updatedAt:fb.serverTimestamp()});
+      if(g===gid)setStat("บันทึกแล้ว");
+    }catch(e){setStat(e.code==="permission-denied"?"บันทึกไม่ได้ ฐานข้อมูลไม่อนุญาต":"บันทึกไม่สำเร็จ ลองแตะอีกครั้ง",true)}
+    finally{pending.delete(p.id)}
+  },500));
+}
+function setStat(t,err){const e=$("saveStat");e.textContent=t;e.classList.toggle("err",!!err)}
 
 // ---------- month views (2 months at a time) ----------
 const T=parse(TODAY);const MIN=T.getUTCFullYear()*12+T.getUTCMonth(),MAX=MIN+11;
@@ -270,7 +361,6 @@ const ym=i=>[Math.floor(i/12),i%12];
 function navLabel(i){const[a,b]=[ym(i),ym(i+1)];return `${MONTHS_FULL[a[1]]} – ${MONTHS_FULL[b[1]]} ${b[0]+543}`}
 
 let brush=2,selWin=0,pickedDay=null;
-const $=id=>document.getElementById(id);
 
 function buildCal(host,start,cellFn){
   host.innerHTML="";
@@ -300,51 +390,56 @@ $("hPrev").onclick=()=>{view.heat--;renderResult()};$("hNext").onclick=()=>{view
 
 // ---------- fill ----------
 const me=()=>S.people.find(p=>p.id===S.current);
+function selectMe(id){S.current=id;if(gid)ls.set("me:"+gid,id);else ls.set("wangtrongkan-demo",JSON.stringify(S))}
 function renderPeople(){
   const h=$("people");h.innerHTML="";
   for(const p of S.people){const c=document.createElement("button");c.className="chip";c.type="button";c.setAttribute("aria-pressed",p.id===S.current);
-    c.innerHTML=`<span class="av">${p.name.slice(0,1)}</span>`;c.append(p.name);c.onclick=()=>{S.current=p.id;save();renderFill()};h.append(c)}
+    c.innerHTML=`<span class="av"></span>`;c.firstChild.textContent=p.name.slice(0,1);c.append(p.name);
+    c.onclick=()=>{selectMe(p.id);renderFill()};h.append(c)}
   const f=document.createElement("form");f.className="addname";
-  f.innerHTML=`<input id="newName" placeholder="ชื่อเล่นใหม่" maxlength="16" aria-label="เพิ่มชื่อ"><button class="btn" type="submit">เพิ่ม</button>`;
-  f.onsubmit=e=>{e.preventDefault();const n=$("newName").value.trim();if(!n)return;
-    if(!S.people.some(p=>p.name===n))S.people.push({id:n+Date.now(),name:n,days:{}});
-    S.current=S.people.find(p=>p.name===n).id;save();renderAll()};
+  f.innerHTML=`<input id="newName" placeholder="${S.people.length?"ชื่อเล่นใหม่":"ใส่ชื่อเล่นของคุณ"}" maxlength="20" aria-label="เพิ่มชื่อ"><button class="btn${S.people.length?"":" primary"}" type="submit">เพิ่ม</button>`;
+  f.onsubmit=e=>{e.preventDefault();const n=$("newName").value.trim().slice(0,20);if(!n)return;
+    let p=S.people.find(x=>x.name===n);
+    if(!p){p={id:randomId(16),name:n,days:{},t:Date.now()};S.people.push(p);persist(p)}
+    selectMe(p.id);renderAll()};
   h.append(f);
 }
 let painting=false;
 function paint(k){const p=me();if(!p)return;if(brush===0)delete p.days[k];else p.days[k]=brush}
 function renderFill(){
   renderPeople();const p=me();
-  $("fillTitle").textContent=p?`วันว่างของ${p.name}`:"เพิ่มชื่อของคุณก่อน";
+  $("fillTitle").textContent=p?`วันว่างของ${p.name}`:"ใส่ชื่อของคุณก่อน แล้วค่อยแตะวันว่าง";
   setupNav("fill","fPrev","fNext","fLabel");
   buildCal($("fillCal"),view.fill,(b,k)=>{
     const s=p?.days[k];if(s)b.classList.add("s-"+s);
-    b.onclick=()=>{if(!p)return;
-      if((p.days[k]||0)===brush&&brush!==0)delete p.days[k];else paint(k);save();renderFill();renderHeader();renderResult()};
+    if(!p){b.disabled=true;return}
+    b.onclick=()=>{
+      if((p.days[k]||0)===brush&&brush!==0)delete p.days[k];else paint(k);persist(p);renderAll()};
     b.onmousedown=()=>{painting=true};
-    b.onmouseenter=e=>{if(painting&&e.buttons===1&&p){paint(k);b.classList.remove("s-1","s-2");if(p.days[k])b.classList.add("s-"+p.days[k])}};
+    b.onmouseenter=e=>{if(painting&&e.buttons===1){paint(k);b.classList.remove("s-1","s-2");if(p.days[k])b.classList.add("s-"+p.days[k])}};
   });
 }
-document.addEventListener("mouseup",()=>{if(painting){painting=false;save();renderAll()}});
+document.addEventListener("mouseup",()=>{if(painting){painting=false;persist(me());renderAll()}});
 document.querySelectorAll(".brush button").forEach(b=>b.onclick=()=>{brush=+b.dataset.b;
   document.querySelectorAll(".brush button").forEach(x=>x.setAttribute("aria-pressed",x===b))});
 $("qWeekend").onclick=()=>{const p=me();if(!p)return;const[a,b]=[ym(view.fill),ym(view.fill+1)];
-  for(const k of daysBetween(key(new Date(Date.UTC(a[0],a[1],1))),key(monthEnd(b[0],b[1]))))if(k>=TODAY&&isOff(k))p.days[k]=2;save();renderAll()};
-$("qClear").onclick=()=>{const p=me();if(!p)return;p.days={};save();renderAll()};
+  for(const k of daysBetween(key(new Date(Date.UTC(a[0],a[1],1))),key(monthEnd(b[0],b[1]))))if(k>=TODAY&&isOff(k))p.days[k]=2;persist(p);renderAll()};
+$("qClear").onclick=()=>{const p=me();if(!p)return;p.days={};persist(p);renderAll()};
 
 // ---------- result ----------
 let wins=[];
 function renderHeader(){$("tCount").textContent=S.people.filter(p=>Object.keys(p.days).some(k=>k>=TODAY)).length}
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
 function renderResult(){
   wins=findWindows(S.people,TODAY);const n=S.people.length;
   const ol=$("wins");ol.innerHTML="";
-  if(!wins.length)ol.innerHTML=`<li class="empty">ยังไม่มีใครกรอกวันว่าง เริ่มจากเลือกชื่อแล้วแตะวันในปฏิทินด้านบน</li>`;
+  if(!wins.length)ol.innerHTML=`<li class="empty">ยังไม่มีใครกรอกวันว่าง ใส่ชื่อแล้วแตะวันในปฏิทินด้านบน แล้วส่งลิงก์ให้เพื่อนกรอกต่อ</li>`;
   if(selWin>=wins.length)selWin=0;
   wins.forEach((w,i)=>{
     const li=document.createElement("li");const b=document.createElement("button");b.type="button";b.className="win";b.setAttribute("aria-pressed",i===selWin);
     const bars=Array.from({length:n},(_,j)=>`<i class="${j<w.go-w.maybe.length?"f":j<w.go?"m":""}"></i>`).join("");
-    let sub=w.missing.length?`ไม่ว่าง: ${w.missing.join(", ")}`:"ว่างครบทุกคน";
-    if(w.maybe.length)sub+=` · พอไหว: ${w.maybe.join(", ")}`;
+    let sub=w.missing.length?`ไม่ว่าง: ${w.missing.map(esc).join(", ")}`:"ว่างครบทุกคน";
+    if(w.maybe.length)sub+=` · พอไหว: ${w.maybe.map(esc).join(", ")}`;
     b.innerHTML=`<span class="rank num">${i+1}</span>
       <span class="dates num">${fmtW(w)}${i===0?'<span class="tag best">ดีที่สุด</span>':""}</span>
       <span class="bar" aria-hidden="true">${bars}</span>
@@ -367,23 +462,35 @@ function renderResult(){
   });
   const who=$("who");
   if(pickedDay){
-    const g=v=>S.people.filter(p=>(p.days[pickedDay]||0)===v).map(p=>p.name).join(", ")||"–";
+    const g=v=>S.people.filter(p=>(p.days[pickedDay]||0)===v).map(p=>esc(p.name)).join(", ")||"–";
     who.innerHTML=`<b>${fmtDay(pickedDay)}${HOLIDAYS[pickedDay]?" · "+HOLIDAYS[pickedDay]:""}</b>
       <div class="r"><span class="dot free"></span>ว่าง: ${g(2)}</div><div class="r"><span class="dot maybe"></span>พอไหว: ${g(1)}</div><div class="r"><span class="dot busy"></span>ไม่ว่าง: ${g(0)}</div>`;
   }else who.innerHTML="";
 }
 $("copyLine").onclick=()=>{
   const lines=["🗓 วันที่ว่างตรงกัน",...wins.slice(0,3).map((w,i)=>`${i+1}. ${fmtW(w)} (${w.len} วัน) ว่าง ${w.go}/${S.people.length}${w.missing.length?" ไม่ว่าง: "+w.missing.join(", "):""}`)];
+  if(gid)lines.push("กรอกวันว่างเพิ่มได้ที่ "+location.href);
   copy(lines.join("\n"),"คัดลอกสรุปแล้ว");
 };
+$("copyLink").onclick=()=>copy($("shareLink").value,"คัดลอกลิงก์แล้ว",$("shareLink"));
 
 // ---------- misc ----------
-function copy(text,msg){
-  (navigator.clipboard?navigator.clipboard.writeText(text):Promise.reject()).then(()=>toast(msg)).catch(()=>toast("คัดลอกไม่ได้ในเบราว์เซอร์นี้"));
+function copy(text,msg,input){
+  (navigator.clipboard?navigator.clipboard.writeText(text):Promise.reject()).then(()=>toast(msg)).catch(()=>{
+    if(input){input.focus();input.select();toast("กดค้างแล้วเลือกคัดลอก")}else toast("คัดลอกไม่ได้ในเบราว์เซอร์นี้")});
 }
 let tt;function toast(m){const t=$("toast");t.textContent=m;t.hidden=false;clearTimeout(tt);tt=setTimeout(()=>t.hidden=true,1800)}
 function renderAll(){renderHeader();renderFill();renderResult()}
-renderAll();
+
+// ---------- boot ----------
+(async()=>{
+  try{await loadFirebase();mode="fb"}catch(e){mode="demo"}
+  $("loading").hidden=true;
+  if(mode==="fb"){const id=hashId();id?openGroup(id):showIntro();return}
+  let saved=null;try{saved=JSON.parse(ls.get("wangtrongkan-demo"))}catch(e){}
+  S=saved&&Array.isArray(saved.people)?saved:{people:sample(),current:"มิว"};
+  $("app").hidden=false;$("demoNote").hidden=false;renderAll();
+})();
 </script>
 
 </body>
