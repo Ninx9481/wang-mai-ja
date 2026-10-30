@@ -1,0 +1,390 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ว่างตรงกัน</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Mitr:wght@400;500;600&family=IBM+Plex+Sans+Thai:wght@400;500;600&display=swap">
+<style>
+/* Layout: mobile-first single column; header like a ticket stub, 3 numbered steps as tabs, calendar is the hero of each step */
+:root{
+  --bg:#EEF3F4; --surface:#FFFFFF; --ink:#10242B; --muted:#5B6F75; --line:#D3DEE0;
+  --accent:#0B7A75; --accent-ink:#FFFFFF; --maybe:#D9930F; --hol:#C93D50;
+  --font-display:"Mitr","IBM Plex Sans Thai",system-ui,sans-serif;
+  --font-body:"IBM Plex Sans Thai",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --r:12px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0D1A1E; --surface:#142529; --ink:#E3EEF0; --muted:#8FA5AA; --line:#263C41;
+  --accent:#3BB8B0; --accent-ink:#062224; --maybe:#F0B94A; --hol:#F07484; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0D1A1E; --surface:#142529; --ink:#E3EEF0; --muted:#8FA5AA; --line:#263C41;
+  --accent:#3BB8B0; --accent-ink:#062224; --maybe:#F0B94A; --hol:#F07484; color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:15px;line-height:1.6;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 48px}
+.wrap{max-width:980px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+h1,h2,h3{font-family:var(--font-display);font-weight:500;margin:0;text-wrap:balance;line-height:1.3}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.num{font-variant-numeric:tabular-nums}
+
+/* ticket header */
+.ticket{background:var(--accent);color:var(--accent-ink);border-radius:var(--r);display:grid;grid-template-columns:1fr auto;position:relative;overflow:hidden}
+.ticket .main{padding:18px 20px;min-width:0}
+.ticket .eyebrow{font-size:12px;letter-spacing:.08em;opacity:.8}
+.ticket h1{font-size:clamp(24px,5vw,34px)}
+.ticket .meta{font-size:14px;opacity:.9;margin-top:4px}
+.ticket .stub{border-left:2px dashed color-mix(in oklab,var(--accent-ink) 45%,transparent);padding:18px 20px;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;min-width:96px}
+.ticket .stub b{font-family:var(--font-display);font-size:30px;font-weight:600;line-height:1}
+.ticket .stub span{font-size:12px;opacity:.85}
+.ticket::before,.ticket::after{content:"";position:absolute;width:18px;height:18px;border-radius:50%;background:var(--bg);right:calc(96px + 31px)}
+.ticket::before{top:-9px}.ticket::after{bottom:-9px}
+@media (max-width:420px){.ticket::before,.ticket::after{display:none}}
+
+/* tabs */
+.tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:5px}
+.tabs button{border:0;background:transparent;border-radius:8px;padding:9px 6px;font-weight:500;color:var(--muted);display:flex;gap:6px;justify-content:center;align-items:center}
+.tabs button i{font-style:normal;width:20px;height:20px;border-radius:50%;border:1.5px solid currentColor;font-size:12px;display:grid;place-items:center}
+.tabs button[aria-selected="true"]{background:var(--ink);color:var(--bg)}
+.panel{display:flex;flex-direction:column;gap:16px}
+
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:18px}
+.hint{color:var(--muted);font-size:14px;margin:0}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:7px 14px;font-size:14px}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
+.btn.ghost{background:transparent}
+
+/* form */
+.form{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px}
+.field{display:flex;flex-direction:column;gap:5px;min-width:0}
+.field label{font-size:13px;color:var(--muted)}
+.field input,.field select{border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:9px 11px;width:100%}
+.share{display:flex;gap:8px;flex-wrap:wrap}
+.share input{flex:1 1 220px;min-width:0;border:1px dashed var(--line);background:var(--bg);border-radius:8px;padding:9px 11px;color:var(--muted)}
+
+/* people chips */
+.chip{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 12px 6px 6px;display:inline-flex;gap:7px;align-items:center;font-size:14px}
+.chip .av{width:24px;height:24px;border-radius:50%;background:var(--bg);display:grid;place-items:center;font-size:12px;font-weight:600}
+.chip[aria-pressed="true"]{border-color:var(--ink);background:var(--ink);color:var(--bg)}
+.chip[aria-pressed="true"] .av{background:var(--accent);color:var(--accent-ink)}
+.addname{display:inline-flex;gap:6px}
+.addname input{border:1px solid var(--line);background:var(--bg);border-radius:999px;padding:6px 12px;width:130px}
+
+/* brush */
+.brush{display:inline-flex;border:1px solid var(--line);border-radius:999px;overflow:hidden}
+.brush button{border:0;background:var(--surface);padding:7px 12px;font-size:14px;display:flex;gap:6px;align-items:center}
+.brush button+button{border-left:1px solid var(--line)}
+.brush button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.dot{width:10px;height:10px;border-radius:3px;display:inline-block;flex:none}
+.dot.free{background:var(--accent)}.dot.maybe{background:var(--maybe)}.dot.busy{background:transparent;border:1.5px solid var(--muted)}
+
+/* calendars */
+.months{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:16px}
+.month h3{font-size:17px;margin-bottom:8px}
+.grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;user-select:none}
+.dow{font-size:12px;color:var(--muted);text-align:center;padding-bottom:2px}
+.dow.we{color:var(--ink);font-weight:600}
+.day{aspect-ratio:1/1;max-width:100%;border:1px solid var(--line);border-radius:8px;background:var(--surface);font-size:14px;position:relative;padding:0;display:grid;place-items:center;font-variant-numeric:tabular-nums;touch-action:manipulation}
+.day.out{visibility:hidden}
+.day.off{opacity:.35;cursor:default}
+.day.hol::after{content:"";position:absolute;top:4px;right:4px;width:6px;height:6px;border-radius:50%;background:var(--hol)}
+.day.we{font-weight:600}
+.day.s-2{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.day.s-1{background:color-mix(in oklab,var(--maybe) 30%,var(--surface));border-color:var(--maybe)}
+.day.inwin{box-shadow:0 0 0 2px var(--ink)}
+.day.picked{outline:2px solid var(--hol);outline-offset:1px}
+.legend{display:flex;flex-wrap:wrap;gap:14px;font-size:13px;color:var(--muted)}
+.legend span{display:inline-flex;gap:6px;align-items:center}
+.holdot{width:7px;height:7px;border-radius:50%;background:var(--hol);display:inline-block}
+.heat{width:46px;height:10px;border-radius:3px;background:linear-gradient(90deg,var(--surface),var(--accent));border:1px solid var(--line)}
+
+/* results */
+.results{display:grid;grid-template-columns:minmax(0,1fr);gap:16px}
+@media (min-width:860px){.results{grid-template-columns:minmax(0,380px) minmax(0,1fr)}}
+.wins{display:flex;flex-direction:column;gap:8px;list-style:none;margin:0;padding:0}
+.win{border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:12px 14px;display:grid;grid-template-columns:auto 1fr;gap:4px 12px;text-align:left;width:100%}
+.win[aria-pressed="true"]{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
+.win .rank{font-family:var(--font-display);font-size:22px;color:var(--muted);grid-row:span 3;line-height:1.2}
+.win .dates{font-family:var(--font-display);font-size:17px}
+.win .bar{display:flex;gap:3px}
+.win .bar i{height:6px;flex:1;border-radius:2px;background:var(--line)}
+.win .bar i.f{background:var(--accent)}.win .bar i.m{background:var(--maybe)}
+.win .sub{font-size:13px;color:var(--muted)}
+.tag{font-size:12px;border-radius:999px;padding:1px 8px;border:1px solid var(--line);margin-left:6px;white-space:nowrap}
+.tag.best{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.who{display:flex;flex-direction:column;gap:6px;font-size:14px}
+.who .r{display:flex;gap:8px;align-items:center}
+.empty{color:var(--muted);font-size:14px;padding:8px 0}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:9px 16px;border-radius:999px;font-size:14px}
+.note{font-size:13px;color:var(--muted);border-top:1px solid var(--line);padding-top:12px;margin:0}
+.confirm{display:flex;gap:8px;flex-wrap:wrap;align-items:center;font-size:14px;color:var(--hol)}
+.mnav{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.mnav b{font-family:var(--font-display);font-weight:500;font-size:15px;text-align:center}
+.mnav button{width:38px;height:38px;border-radius:50%;border:1px solid var(--line);background:var(--surface);font-size:18px;line-height:1}
+.mnav button:disabled{opacity:.35;cursor:default}
+.sec{font-family:var(--font-display);font-size:13px;letter-spacing:.06em;color:var(--muted);display:flex;align-items:center;gap:10px}
+.sec::after{content:"";flex:1;height:1px;background:var(--line)}
+@media (prefers-reduced-motion:no-preference){.day,.win,.chip{transition:background .12s,border-color .12s,box-shadow .12s}}
+</style>
+</head>
+<body>
+
+
+<div class="wrap">
+  <header class="ticket">
+    <div class="main">
+      <div class="eyebrow">นัดเพื่อนไปเที่ยว</div>
+      <h1>วันว่างตรงกัน</h1>
+      <div class="meta">กรอกวันที่คุณว่าง แล้วเลื่อนลงไปดูว่าวันไหนว่างตรงกับเพื่อน</div>
+    </div>
+    <div class="stub"><b id="tCount" class="num">0</b><span>คนกรอกแล้ว</span></div>
+  </header>
+
+  <div class="sec">กรอกวันว่าง</div>
+  <div class="card" style="display:flex;flex-direction:column;gap:12px">
+    <h2 style="font-size:20px">คุณคือใคร</h2>
+    <div class="row" id="people"></div>
+  </div>
+  <div class="card" style="display:flex;flex-direction:column;gap:14px">
+    <div class="row" style="justify-content:space-between">
+      <h2 style="font-size:20px" id="fillTitle">วันว่างของ</h2>
+      <div class="brush" role="group" aria-label="เลือกสถานะที่จะใส่">
+        <button data-b="2" aria-pressed="true"><span class="dot free"></span>ว่าง</button>
+        <button data-b="1" aria-pressed="false"><span class="dot maybe"></span>พอไหว</button>
+        <button data-b="0" aria-pressed="false"><span class="dot busy"></span>ไม่ว่าง</button>
+      </div>
+    </div>
+    <p class="hint">เลือกสถานะด้านบน แล้วแตะวันที่ในปฏิทิน บนคอมลากเมาส์ระบายหลายวันได้ วันที่ไม่ได้แตะถือว่าไม่ว่าง</p>
+    <div class="row">
+      <button class="btn" id="qWeekend" type="button">ว่างทุกเสาร์-อาทิตย์และวันหยุด (2 เดือนนี้)</button>
+      <button class="btn ghost" id="qClear" type="button">ล้างของฉัน</button>
+    </div>
+    <div class="mnav"><button type="button" id="fPrev" aria-label="เดือนก่อน">‹</button><b id="fLabel"></b><button type="button" id="fNext" aria-label="เดือนถัดไป">›</button></div>
+    <div class="months" id="fillCal"></div>
+    <div class="legend">
+      <span><span class="dot free"></span>ว่าง</span><span><span class="dot maybe"></span>พอไหว</span>
+      <span><span class="holdot"></span>วันหยุดราชการ</span>
+    </div>
+  </div>
+
+  <div class="sec">ผลรวมของทุกคน</div>
+  <div class="results">
+    <div class="card" style="display:flex;flex-direction:column;gap:12px">
+      <div class="row" style="justify-content:space-between">
+        <h2 style="font-size:20px">วันที่ว่างตรงกัน</h2>
+        <button class="btn" id="copyLine" type="button">คัดลอกไปแปะไลน์</button>
+      </div>
+      <ol class="wins" id="wins"></ol>
+    </div>
+    <div class="card" style="display:flex;flex-direction:column;gap:14px">
+      <h2 style="font-size:20px">ปฏิทินรวม</h2>
+      <p class="hint">ยิ่งสีเข้ม ยิ่งมีคนว่างเยอะ แตะวันเพื่อดูว่าใครว่างบ้าง</p>
+      <div class="mnav"><button type="button" id="hPrev" aria-label="เดือนก่อน">‹</button><b id="hLabel"></b><button type="button" id="hNext" aria-label="เดือนถัดไป">›</button></div>
+      <div class="months" id="heatCal"></div>
+      <div class="legend">
+        <span>ว่าง 0 คน <span class="heat"></span> ว่างทุกคน</span>
+        <span><span class="holdot"></span>วันหยุดราชการ</span>
+      </div>
+      <div class="who" id="who"></div>
+    </div>
+  </div>
+  <p class="note">ต้นแบบนี้เก็บข้อมูลไว้ในเบราว์เซอร์เครื่องนี้เท่านั้น ถ้าจะให้เพื่อนกรอกผ่านลิงก์เดียวกันแล้วเห็นผลรวมกัน ต้องต่อฐานข้อมูล เช่น Firebase หรือ Supabase</p>
+</div>
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script>
+const MONTHS=["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
+const MONTHS_FULL=["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
+const DOW=["อา","จ","อ","พ","พฤ","ศ","ส"];
+const DOW_DOT=["อา.","จ.","อ.","พ.","พฤ.","ศ.","ส."];
+// วันหยุดราชการ (ตัวอย่าง) ควรตรวจกับประกาศ ครม. อีกครั้งก่อนใช้จริง
+const HOLIDAYS={"2026-12-05":"วันพ่อแห่งชาติ","2026-12-07":"ชดเชยวันพ่อแห่งชาติ","2026-12-10":"วันรัฐธรรมนูญ","2026-12-31":"วันสิ้นปี",
+  "2027-01-01":"วันขึ้นปีใหม่","2027-04-06":"วันจักรี","2027-04-13":"วันสงกรานต์","2027-04-14":"วันสงกรานต์","2027-04-15":"วันสงกรานต์"};
+
+// ---------- date utils (UTC keys, no timezone drift) ----------
+const key=d=>d.toISOString().slice(0,10);
+const parse=k=>{const[y,m,d]=k.split("-").map(Number);return new Date(Date.UTC(y,m-1,d))};
+const addDays=(d,n)=>new Date(d.getTime()+n*864e5);
+const monthEnd=(y,m)=>new Date(Date.UTC(y,m+1,0));
+function daysBetween(a,b){const out=[];for(let d=parse(a);d<=parse(b);d=addDays(d,1))out.push(key(d));return out}
+const isWeekend=k=>{const w=parse(k).getUTCDay();return w===0||w===6};
+const isOff=k=>isWeekend(k)||!!HOLIDAYS[k];
+const be=y=>String(y+543).slice(2);
+function fmtDay(a){const A=parse(a);return `${DOW_DOT[A.getUTCDay()]} ${A.getUTCDate()} ${MONTHS[A.getUTCMonth()]} ${be(A.getUTCFullYear())}`}
+function fmtRange(a,b){const A=parse(a),B=parse(b);
+  const left=`${DOW_DOT[A.getUTCDay()]} ${A.getUTCDate()}${A.getUTCMonth()!==B.getUTCMonth()?" "+MONTHS[A.getUTCMonth()]:""}`;
+  return `${left} – ${DOW_DOT[B.getUTCDay()]} ${B.getUTCDate()} ${MONTHS[B.getUTCMonth()]} ${be(B.getUTCFullYear())}`}
+const fmtW=w=>w.len>1?fmtRange(w.start,w.end):fmtDay(w.start);
+const now=new Date();const TODAY=key(new Date(Date.UTC(now.getFullYear(),now.getMonth(),now.getDate())));
+
+// ---------- matching logic ----------
+// status per day: 2 = ว่าง, 1 = พอไหว, ไม่มีค่า = ไม่ว่าง
+// ดูทุกวันตั้งแต่วันนี้ถึงวันสุดท้ายที่มีคนกรอก รวมวันติดกันที่คนว่างเป็นกลุ่มเดียวกันเป็นหนึ่งช่วง
+function findWindows(people,today){
+  let last=today;for(const p of people)for(const k in p.days)if(k>last)last=k;
+  const runs=[];let cur=null;
+  for(const k of daysBetween(today,last)){
+    const avail=people.filter(p=>(p.days[k]||0)>=1);
+    const sig=avail.map(p=>p.id).join("|");
+    if(cur&&cur.sig===sig){cur.end=k;cur.days.push(k)}
+    else{if(cur)runs.push(cur);cur=avail.length?{sig,start:k,end:k,days:[k],avail}:null}
+  }
+  if(cur)runs.push(cur);
+  const res=runs.map(r=>({start:r.start,end:r.end,len:r.days.length,go:r.avail.length,
+    maybe:r.avail.filter(p=>r.days.some(k=>p.days[k]===1)).map(p=>p.name),
+    missing:people.filter(p=>!r.avail.includes(p)).map(p=>p.name),
+    leave:r.days.filter(k=>!isOff(k)).length}));
+  res.sort((a,b)=>b.go-a.go||b.len-a.len||a.maybe.length-b.maybe.length||a.start.localeCompare(b.start));
+  return res.slice(0,6);
+}
+
+// ---------- sample state ----------
+function sample(){
+  const base=()=>{const d={};for(const k of daysBetween("2026-11-01","2026-12-31"))if(isOff(k))d[k]=2;return d};
+  const mk=(name,free=[],maybe=[],busy=[])=>{const d=base();free.forEach(k=>d[k]=2);maybe.forEach(k=>d[k]=1);busy.forEach(k=>delete d[k]);return{id:name,name,days:d}};
+  return{people:[
+    mk("ต้น",[],["2026-12-07"],["2026-11-14","2026-11-15","2026-11-28","2026-11-29"]),
+    mk("มิว",["2026-11-13","2026-11-27"],[],["2026-12-12","2026-12-13"]),
+    mk("แบม",["2026-12-04","2026-12-11"],[],["2026-11-21","2026-11-22"]),
+    mk("กอล์ฟ",["2026-12-04","2026-12-11"],["2026-11-27"],["2026-12-19","2026-12-20"]),
+    mk("ปราง",["2026-12-04","2026-12-11","2026-11-27"],[],["2026-11-07","2026-11-08"]),
+  ],current:"มิว"};
+}
+let S;
+try{S=JSON.parse(localStorage.getItem("wangtrongkan3"))}catch(e){}
+if(!S||!Array.isArray(S.people))S=sample();
+const save=()=>{try{localStorage.setItem("wangtrongkan3",JSON.stringify(S))}catch(e){}};
+
+// ---------- month views (2 months at a time) ----------
+const T=parse(TODAY);const MIN=T.getUTCFullYear()*12+T.getUTCMonth(),MAX=MIN+11;
+const startIdx=MIN+(T.getUTCDate()>24?1:0);
+const view={fill:startIdx,heat:startIdx};
+const ym=i=>[Math.floor(i/12),i%12];
+function navLabel(i){const[a,b]=[ym(i),ym(i+1)];return `${MONTHS_FULL[a[1]]} – ${MONTHS_FULL[b[1]]} ${b[0]+543}`}
+
+let brush=2,selWin=0,pickedDay=null;
+const $=id=>document.getElementById(id);
+
+function buildCal(host,start,cellFn){
+  host.innerHTML="";
+  for(const[y,m]of[ym(start),ym(start+1)]){
+    const box=document.createElement("div");box.className="month";
+    box.innerHTML=`<h3>${MONTHS_FULL[m]} ${y+543}</h3>`;
+    const g=document.createElement("div");g.className="grid";
+    DOW.forEach((d,i)=>{const e=document.createElement("div");e.className="dow"+(i===0||i===6?" we":"");e.textContent=d;g.append(e)});
+    const first=new Date(Date.UTC(y,m,1)).getUTCDay();
+    for(let i=0;i<first;i++){const e=document.createElement("div");e.className="day out";g.append(e)}
+    for(let d=1;d<=monthEnd(y,m).getUTCDate();d++){
+      const k=key(new Date(Date.UTC(y,m,d)));const b=document.createElement("button");b.type="button";
+      b.className="day"+(isWeekend(k)?" we":"")+(HOLIDAYS[k]?" hol":"");b.textContent=d;b.dataset.k=k;
+      if(HOLIDAYS[k])b.title=HOLIDAYS[k];
+      if(k<TODAY){b.classList.add("off");b.disabled=true}else cellFn(b,k);
+      g.append(b);
+    }
+    box.append(g);host.append(box);
+  }
+}
+function setupNav(name,prev,next,label){
+  $(label).textContent=navLabel(view[name]);
+  $(prev).disabled=view[name]<=MIN;$(next).disabled=view[name]>=MAX;
+}
+$("fPrev").onclick=()=>{view.fill--;renderFill()};$("fNext").onclick=()=>{view.fill++;renderFill()};
+$("hPrev").onclick=()=>{view.heat--;renderResult()};$("hNext").onclick=()=>{view.heat++;renderResult()};
+
+// ---------- fill ----------
+const me=()=>S.people.find(p=>p.id===S.current);
+function renderPeople(){
+  const h=$("people");h.innerHTML="";
+  for(const p of S.people){const c=document.createElement("button");c.className="chip";c.type="button";c.setAttribute("aria-pressed",p.id===S.current);
+    c.innerHTML=`<span class="av">${p.name.slice(0,1)}</span>`;c.append(p.name);c.onclick=()=>{S.current=p.id;save();renderFill()};h.append(c)}
+  const f=document.createElement("form");f.className="addname";
+  f.innerHTML=`<input id="newName" placeholder="ชื่อเล่นใหม่" maxlength="16" aria-label="เพิ่มชื่อ"><button class="btn" type="submit">เพิ่ม</button>`;
+  f.onsubmit=e=>{e.preventDefault();const n=$("newName").value.trim();if(!n)return;
+    if(!S.people.some(p=>p.name===n))S.people.push({id:n+Date.now(),name:n,days:{}});
+    S.current=S.people.find(p=>p.name===n).id;save();renderAll()};
+  h.append(f);
+}
+let painting=false;
+function paint(k){const p=me();if(!p)return;if(brush===0)delete p.days[k];else p.days[k]=brush}
+function renderFill(){
+  renderPeople();const p=me();
+  $("fillTitle").textContent=p?`วันว่างของ${p.name}`:"เพิ่มชื่อของคุณก่อน";
+  setupNav("fill","fPrev","fNext","fLabel");
+  buildCal($("fillCal"),view.fill,(b,k)=>{
+    const s=p?.days[k];if(s)b.classList.add("s-"+s);
+    b.onclick=()=>{if(!p)return;
+      if((p.days[k]||0)===brush&&brush!==0)delete p.days[k];else paint(k);save();renderFill();renderHeader();renderResult()};
+    b.onmousedown=()=>{painting=true};
+    b.onmouseenter=e=>{if(painting&&e.buttons===1&&p){paint(k);b.classList.remove("s-1","s-2");if(p.days[k])b.classList.add("s-"+p.days[k])}};
+  });
+}
+document.addEventListener("mouseup",()=>{if(painting){painting=false;save();renderAll()}});
+document.querySelectorAll(".brush button").forEach(b=>b.onclick=()=>{brush=+b.dataset.b;
+  document.querySelectorAll(".brush button").forEach(x=>x.setAttribute("aria-pressed",x===b))});
+$("qWeekend").onclick=()=>{const p=me();if(!p)return;const[a,b]=[ym(view.fill),ym(view.fill+1)];
+  for(const k of daysBetween(key(new Date(Date.UTC(a[0],a[1],1))),key(monthEnd(b[0],b[1]))))if(k>=TODAY&&isOff(k))p.days[k]=2;save();renderAll()};
+$("qClear").onclick=()=>{const p=me();if(!p)return;p.days={};save();renderAll()};
+
+// ---------- result ----------
+let wins=[];
+function renderHeader(){$("tCount").textContent=S.people.filter(p=>Object.keys(p.days).some(k=>k>=TODAY)).length}
+function renderResult(){
+  wins=findWindows(S.people,TODAY);const n=S.people.length;
+  const ol=$("wins");ol.innerHTML="";
+  if(!wins.length)ol.innerHTML=`<li class="empty">ยังไม่มีใครกรอกวันว่าง เริ่มจากเลือกชื่อแล้วแตะวันในปฏิทินด้านบน</li>`;
+  if(selWin>=wins.length)selWin=0;
+  wins.forEach((w,i)=>{
+    const li=document.createElement("li");const b=document.createElement("button");b.type="button";b.className="win";b.setAttribute("aria-pressed",i===selWin);
+    const bars=Array.from({length:n},(_,j)=>`<i class="${j<w.go-w.maybe.length?"f":j<w.go?"m":""}"></i>`).join("");
+    let sub=w.missing.length?`ไม่ว่าง: ${w.missing.join(", ")}`:"ว่างครบทุกคน";
+    if(w.maybe.length)sub+=` · พอไหว: ${w.maybe.join(", ")}`;
+    b.innerHTML=`<span class="rank num">${i+1}</span>
+      <span class="dates num">${fmtW(w)}${i===0?'<span class="tag best">ดีที่สุด</span>':""}</span>
+      <span class="bar" aria-hidden="true">${bars}</span>
+      <span class="sub num">${w.len} วัน · ว่าง ${w.go}/${n} คน · ${w.leave?`ต้องลา ${w.leave} วัน`:"ไม่ต้องลางาน"}<br>${sub}</span>`;
+    b.onclick=()=>{selWin=i;pickedDay=null;const A=parse(w.start);
+      const idx=A.getUTCFullYear()*12+A.getUTCMonth();if(idx<view.heat||idx>view.heat+1)view.heat=Math.min(idx,MAX);renderResult()};
+    li.append(b);ol.append(li);
+  });
+  const sw=wins[selWin];
+  setupNav("heat","hPrev","hNext","hLabel");
+  buildCal($("heatCal"),view.heat,(b,k)=>{
+    const free=S.people.filter(p=>p.days[k]===2).length,maybe=S.people.filter(p=>p.days[k]===1).length;
+    const r=n?(free+maybe*.5)/n:0;
+    b.style.background=`color-mix(in oklab, var(--accent) ${Math.round(r*100)}%, var(--surface))`;
+    if(r>.55){b.style.color="var(--accent-ink)";b.style.borderColor="transparent"}
+    if(sw&&k>=sw.start&&k<=sw.end)b.classList.add("inwin");
+    if(k===pickedDay)b.classList.add("picked");
+    b.setAttribute("aria-label",`${fmtDay(k)} ว่าง ${free} คน พอไหว ${maybe} คน${HOLIDAYS[k]?" "+HOLIDAYS[k]:""}`);
+    b.onclick=()=>{pickedDay=k;renderResult()};
+  });
+  const who=$("who");
+  if(pickedDay){
+    const g=v=>S.people.filter(p=>(p.days[pickedDay]||0)===v).map(p=>p.name).join(", ")||"–";
+    who.innerHTML=`<b>${fmtDay(pickedDay)}${HOLIDAYS[pickedDay]?" · "+HOLIDAYS[pickedDay]:""}</b>
+      <div class="r"><span class="dot free"></span>ว่าง: ${g(2)}</div><div class="r"><span class="dot maybe"></span>พอไหว: ${g(1)}</div><div class="r"><span class="dot busy"></span>ไม่ว่าง: ${g(0)}</div>`;
+  }else who.innerHTML="";
+}
+$("copyLine").onclick=()=>{
+  const lines=["🗓 วันที่ว่างตรงกัน",...wins.slice(0,3).map((w,i)=>`${i+1}. ${fmtW(w)} (${w.len} วัน) ว่าง ${w.go}/${S.people.length}${w.missing.length?" ไม่ว่าง: "+w.missing.join(", "):""}`)];
+  copy(lines.join("\n"),"คัดลอกสรุปแล้ว");
+};
+
+// ---------- misc ----------
+function copy(text,msg){
+  (navigator.clipboard?navigator.clipboard.writeText(text):Promise.reject()).then(()=>toast(msg)).catch(()=>toast("คัดลอกไม่ได้ในเบราว์เซอร์นี้"));
+}
+let tt;function toast(m){const t=$("toast");t.textContent=m;t.hidden=false;clearTimeout(tt);tt=setTimeout(()=>t.hidden=true,1800)}
+function renderAll(){renderHeader();renderFill();renderResult()}
+renderAll();
+</script>
+
+</body>
+</html>
