@@ -351,14 +351,16 @@ function persist(p){
   if(!p)return;
   if(mode!=="fb"){ls.set("wangtrongkan-demo",JSON.stringify(S));return}
   clearTimeout(pending.get(p.id));setStat("กำลังบันทึก…");
-  pending.set(p.id,setTimeout(async()=>{
+  const tid=setTimeout(async()=>{
     const g=gid;
+    const warn=setTimeout(()=>{if(pending.get(p.id)===tid)setStat("ยังบันทึกขึ้นเซิร์ฟเวอร์ไม่ได้ ตรวจว่าสร้าง Firestore Database แล้ว และอินเทอร์เน็ตใช้ได้",true)},8000);
     try{
       await fb.setDoc(fb.doc(fb.db,"groups",g,"people",p.id),{name:p.name,days:p.days,createdAt:p.createdAt||fb.serverTimestamp(),updatedAt:fb.serverTimestamp()});
       if(g===gid)setStat("บันทึกแล้ว");
     }catch(e){setStat(e.code==="permission-denied"?"บันทึกไม่ได้ ฐานข้อมูลไม่อนุญาต":"บันทึกไม่สำเร็จ ลองแตะอีกครั้ง",true)}
-    finally{pending.delete(p.id)}
-  },500));
+    finally{clearTimeout(warn);if(pending.get(p.id)===tid)pending.delete(p.id)}
+  },500);
+  pending.set(p.id,tid);
 }
 function setStat(t,err){const e=$("saveStat");e.textContent=t;e.classList.toggle("err",!!err)}
 
@@ -413,7 +415,9 @@ function renderPeople(){
     selectMe(p.id);renderAll()};
   h.append(f);
 }
-let painting=false;
+// ลากเมาส์ระบายหลายวัน: วาดปฏิทินใหม่เฉพาะตอนลากจริง ไม่งั้นการแตะธรรมดาจะหลุด
+let painting=null,dragged=false,lastDrag=0;
+function mark(b,k){const q=me();b.classList.remove("s-1","s-2");if(q&&q.days[k])b.classList.add("s-"+q.days[k])}
 function paint(k){const p=me();if(!p)return;if(brush===0)delete p.days[k];else p.days[k]=brush}
 function renderFill(){
   renderPeople();const p=me();
@@ -422,13 +426,16 @@ function renderFill(){
   buildCal($("fillCal"),view.fill,(b,k)=>{
     const s=p?.days[k];if(s)b.classList.add("s-"+s);
     if(!p){b.disabled=true;return}
-    b.onclick=()=>{
-      if((p.days[k]||0)===brush&&brush!==0)delete p.days[k];else paint(k);persist(p);renderAll()};
-    b.onmousedown=()=>{painting=true};
-    b.onmouseenter=e=>{if(painting&&e.buttons===1){paint(k);b.classList.remove("s-1","s-2");if(p.days[k])b.classList.add("s-"+p.days[k])}};
+    b.onclick=()=>{if(Date.now()-lastDrag<400)return;const q=me();if(!q)return;
+      if((q.days[k]||0)===brush&&brush!==0)delete q.days[k];else paint(k);persist(q);renderAll()};
+    b.onmousedown=e=>{if(e.button===0){painting=k;dragged=false}};
+    b.onmouseenter=e=>{if(!painting||e.buttons!==1)return;
+      if(!dragged){dragged=true;paint(painting);const s=$("fillCal").querySelector(`[data-k="${painting}"]`);if(s)mark(s,painting)}
+      paint(k);mark(b,k)};
   });
 }
-document.addEventListener("mouseup",()=>{if(painting){painting=false;persist(me());renderAll()}});
+document.addEventListener("mouseup",()=>{if(!painting)return;const d=dragged;painting=null;dragged=false;
+  if(d){lastDrag=Date.now();persist(me());renderAll()}});
 document.querySelectorAll(".brush button").forEach(b=>b.onclick=()=>{brush=+b.dataset.b;
   document.querySelectorAll(".brush button").forEach(x=>x.setAttribute("aria-pressed",x===b))});
 $("qWeekend").onclick=()=>{const p=me();if(!p)return;const[a,b]=[ym(view.fill),ym(view.fill+1)];
